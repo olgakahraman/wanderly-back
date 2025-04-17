@@ -6,12 +6,24 @@ const authRoute = require('./routes/auth');
 const authMiddleware = require('./middleware/auth.js');
 const notFound = require('./middleware/notFound');
 const errorHandlerMiddleware = require('./middleware/errorHandler');
+
 const connectDB = require('./db/connect');
 require('dotenv').config();
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://wanderly-front.onrender.com',
+];
+
 app.use(
   cors({
-    origin: 'https://wanderly-front.onrender.com',
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
