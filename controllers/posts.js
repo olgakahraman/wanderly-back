@@ -1,6 +1,6 @@
 const Post = require('../models/Post');
 
-const getAllPosts = (req, res) => {
+const getAllPosts =  (req, res) => {
   res.send('get all posts');
 };
 
