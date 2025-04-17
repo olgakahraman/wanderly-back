@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const cors = require('cors');
 const posts = require('./routes/posts');
 const authRoute = require('./routes/auth');
 const authMiddleware = require('./middleware/auth.js');
@@ -7,6 +8,13 @@ const notFound = require('./middleware/notFound');
 const errorHandlerMiddleware = require('./middleware/errorHandler');
 const connectDB = require('./db/connect');
 require('dotenv').config();
+
+app.use(
+  cors({
+    origin: 'https://wanderly-front.onrender.com',
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
