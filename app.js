@@ -18,10 +18,11 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
+      console.log('CORS origin:', origin);
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error('Not allowed by CORS: ' + origin));
       }
     },
     credentials: true,
@@ -36,6 +37,7 @@ app.get('/hello', (req, res) => {
 
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/posts', authMiddleware, posts);
+
 app.use(notFound);
 app.use(errorHandlerMiddleware);
 
