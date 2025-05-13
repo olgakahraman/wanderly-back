@@ -15,7 +15,7 @@ const PostSchema = new mongoose.Schema({
     trim: true,
   },
   tags: {
-    type: [String], 
+    type: [String],
     default: [],
   },
   images: {
@@ -28,8 +28,9 @@ const PostSchema = new mongoose.Schema({
     required: true,
   },
   likes: {
-    type: Number,
-    default: 0,
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
+    default: [],
   },
   createdAt: {
     type: Date,

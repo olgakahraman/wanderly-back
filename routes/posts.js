@@ -1,21 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-
 const {
   getAllPosts,
   createPost,
   getPost,
   updatePost,
   deletePost,
+  likePost,
 } = require('../controllers/posts');
 
-router.route('/').get(auth, getAllPosts).post(auth, createPost);
+ router.get('/', getAllPosts);
+ router.get('/:id', getPost);
 
-router
-  .route('/:id')
-  .get(auth, getPost)
-  .patch(auth, updatePost)
-  .delete(auth, deletePost);
+router.post('/', auth, createPost);
+router.patch('/:id', auth, updatePost);
+router.delete('/:id', auth, deletePost);
+router.patch('/:id/like', auth, likePost);
 
 module.exports = router;

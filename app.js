@@ -17,26 +17,24 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      console.log('CORS origin:', origin);
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS: ' + origin));
-      }
-    },
+    origin: allowedOrigins,
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
 app.use(express.json());
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
 
 app.get('/hello', (req, res) => {
   res.send('Wanderly app server side is here');
 });
 
 app.use('/api/v1/auth', authRoute);
-app.use('/api/v1/posts', authMiddleware, posts);
+app.use('/api/v1/posts', posts);
 
 app.use(notFound);
 app.use(errorHandlerMiddleware);
