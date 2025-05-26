@@ -38,45 +38,65 @@ const getPost = async (req, res) => {
 };
 
 const updatePost = async (req, res) => {
-  const post = await Post.findOneAndUpdate(
-    { _id: req.params.id, author: req.user.userId },
-    req.body,
-    { new: true, runValidators: true }
-  );
-  if (!post) {
-    return res.status(404).json({ msg: 'Post not found or unauthorized' });
+  try {
+    const post = await Post.findOneAndUpdate(
+      { _id: req.params.id, author: req.user.userId },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found or unauthorized' });
+    }
+    res.status(200).json({ post });
+  } catch (error) {
+    console.error('Error updating post:', error);
+    res.status(500).json({ error: 'Server error' });
   }
-  res.status(200).json({ post });
 };
 
 const likePost = async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  if (!post) {
-    return res.status(404).json({ msg: 'Post not found' });
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found' });
+    }
+
+    const userId = req.user.userId;
+
+    if (post.author.toString() === userId) {
+      return res.status(400).json({ msg: "You can't like your own post" });
+    }
+
+    const likeIndex = post.likes.indexOf(userId);
+
+    if (likeIndex === -1) {
+      post.likes.push(userId);
+    } else {
+      post.likes.splice(likeIndex, 1);
+    }
+
+    await post.save();
+    res.status(200).json({ post });
+  } catch (error) {
+    console.error('Error in likePost:', error);
+    res.status(500).json({ error: 'Server error' });
   }
-
-  const userId = req.user.userId;
-  const likeIndex = post.likes.indexOf(userId);
-
-  if (likeIndex === -1) {
-    post.likes.push(userId);
-  } else {
-    post.likes.splice(likeIndex, 1);
-  }
-
-  await post.save();
-  res.status(200).json({ post });
 };
 
 const deletePost = async (req, res) => {
-  const post = await Post.findOneAndDelete({
-    _id: req.params.id,
-    author: req.user.userId,
-  });
-  if (!post) {
-    return res.status(404).json({ msg: 'Post not found or authorized' });
+  try {
+    const post = await Post.findOneAndDelete({
+      _id: req.params.id,
+      author: req.user.userId,
+    });
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found or unauthorized' });
+    }
+    res.status(200).json({ msg: 'Post deleted' });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    res.status(500).json({ error: 'Server error' });
   }
-  res.status(200).json({ msg: 'Post deleted' });
 };
 
 module.exports = {
