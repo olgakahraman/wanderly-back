@@ -13,7 +13,7 @@ const register = async (req, res) => {
 
     const user = await User.create({ email, password });
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1d',
+      expiresIn: '30d',
     });
 
     res.status(201).json({ user: { email: user.email }, token });
@@ -53,45 +53,52 @@ const login = async (req, res) => {
 };
 
 const forgotPassword = async (req, res) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email });
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
 
-  if (!user) {
-    return res.status(200).json({ msg: 'If user exists, email was sent' }); //
+    if (!user) {
+      return res.status(200).json({ msg: 'If user exists, email was sent' });
+    }
+
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.RESET_PASSWORD_SECRET,
+      { expiresIn: '10m' }
+    );
+
+    const link = `${process.env.CLIENT_URL}/reset-password/${token}`;
+
+    const testAccount = await nodemailer.createTestAccount();
+
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      to: user.email,
+      subject: 'Reset your password',
+      html: `<p>Click this link to reset your password: <a href="${link}">${link}</a></p>`,
+    });
+
+    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+    res.status(200).json({ msg: 'Reset link sent' });
+  } catch (error) {
+    console.error('Error in forgotPassword:', error);
+    res.status(500).json({ msg: 'Server error' });
   }
-
-  const token = jwt.sign(
-    { userId: user._id },
-    process.env.RESET_PASSWORD_SECRET,
-    { expiresIn: '10m' }
-  );
-
-  const link = `${process.env.CLIENT_URL}/reset-password/${token}`;
-
-  const testAccount = await nodemailer.createTestAccount();
-
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    },
-  });
-
-  const info = await transporter.sendMail({
-    to: user.email,
-    subject: 'Reset your password',
-    html: `<p>Click this link to reset your password: <a href="${link}">${link}</a></p>`,
-  });
-
-  console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
-
-  res.status(200).json({ msg: 'Reset link sent' });
 };
-
 const resetPassword = async (req, res) => {
-  const { token, password } = req.body;
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ msg: 'Missing token or password' });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.RESET_PASSWORD_SECRET);
@@ -99,7 +106,7 @@ const resetPassword = async (req, res) => {
 
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    user.password = password;
+    user.password = newPassword;
     await user.save();
 
     res.status(200).json({ msg: 'Password updated successfully' });
@@ -109,7 +116,6 @@ const resetPassword = async (req, res) => {
 };
 
 module.exports = {
-  // createUser,
   register,
   login,
   forgotPassword,

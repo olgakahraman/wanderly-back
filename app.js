@@ -10,6 +10,9 @@ const errorHandlerMiddleware = require('./middleware/errorHandler');
 const connectDB = require('./db/connect');
 require('dotenv').config();
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+
 const allowedOrigins = [
   'http://localhost:5173',
   'https://wanderly-front.onrender.com',
@@ -28,6 +31,8 @@ app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
 });
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/hello', (req, res) => {
   res.send('Wanderly app server side is here');
