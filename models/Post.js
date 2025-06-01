@@ -112,8 +112,9 @@ const PostSchema = new mongoose.Schema(
       transform: (doc, ret) => {
         delete ret.__v;
         return ret;
-      }
+      },
+    },
   }
-});
+);
 
 module.exports = mongoose.model('Post', PostSchema);

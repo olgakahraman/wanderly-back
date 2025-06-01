@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const helmet = require('helmet');
 const cors = require('cors');
 const posts = require('./routes/posts');
 const authRoute = require('./routes/auth');
@@ -25,6 +26,7 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+app.use(helmet());
 
 app.use(express.json());
 app.use((req, res, next) => {
@@ -56,3 +58,5 @@ const start = async () => {
 };
 
 start();
+
+// swagger docs http://localhost:3000/api-docs/
