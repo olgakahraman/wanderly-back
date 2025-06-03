@@ -17,7 +17,7 @@ const swaggerSpec = require('./config/swagger');
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://wanderly-front.onrender.com',
+  'https://wanderly-backend.onrender.com',
 ];
 
 app.use(
@@ -28,10 +28,6 @@ app.use(
   })
 );
 app.use(helmet());
-<<<<<<< HEAD
-
-=======
->>>>>>> origin
 app.use(xss());
 
 app.use(express.json());
