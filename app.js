@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const helmet = require('helmet');
 const cors = require('cors');
+const xss = require('xss-clean');
 const posts = require('./routes/posts');
 const authRoute = require('./routes/auth');
 const authMiddleware = require('./middleware/auth.js');
@@ -27,6 +28,7 @@ app.use(
   })
 );
 app.use(helmet());
+app.use(xss());
 
 app.use(express.json());
 app.use((req, res, next) => {
@@ -46,7 +48,7 @@ app.use('/api/v1/posts', posts);
 app.use(notFound);
 app.use(errorHandlerMiddleware);
 
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const start = async () => {
   try {
