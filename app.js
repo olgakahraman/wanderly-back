@@ -28,6 +28,7 @@ app.use(
   })
 );
 app.use(helmet());
+
 app.use(xss());
 
 app.use(express.json());
