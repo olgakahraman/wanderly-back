@@ -28,7 +28,10 @@ app.use(
   })
 );
 app.use(helmet());
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin
 app.use(xss());
 
 app.use(express.json());
