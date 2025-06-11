@@ -23,27 +23,32 @@
     </style>
   </head>
   <body>
-    <h1>Hi, <%= user %>!</h1>
-    <h2>Your map of visited countries</h2>
-
-    <div class="map">
-      <% countries.forEach(country => { %>
-      <div
-        class="country"
-        style="<%= visitedCountries.includes(country) ? 'background: #7fffd4;' : '' %>"     
-      >
-        <%= country %>
-      </div>
-      <% }) %>
-    </div>
-
-    <form method="POST">
-      <select name="country">
+    <% if (user) { %>
+      <h1>Hi, <%= user.name || user.email %>!</h1>
+      <a href="/auth/logout">Logout</a>
+      
+      <h2>Your map of visited countries</h2>
+      <div class="map">
         <% countries.forEach(country => { %>
-        <option value="<%= country %>"><%= country %></option>
+        <div
+          class="country"
+          style="<%= visitedCountries.includes(country) ? 'background: #7fffd4;' : '' %>"     
+        >
+          <%= country %>
+        </div>
         <% }) %>
-      </select>
-      <button>Add to My Visited Countries</button>
-    </form>
+      </div>
+
+      <form method="POST">
+        <select name="country">
+          <% countries.forEach(country => { %>
+          <option value="<%= country %>"><%= country %></option>
+          <% }) %>
+        </select>
+        <button>Add to My Visited Countries</button>
+      </form>
+    <% } else { %>
+      <p>Please <a href="/auth/login">login</a> to view your travel map.</p>
+    <% } %>
   </body>
 </html>

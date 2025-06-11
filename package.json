@@ -28,6 +28,8 @@
     "mongodb": "^6.15.0",
     "mongoose": "^8.13.2",
     "nodemailer": "^6.10.1",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "xss-clean": "^0.1.4"

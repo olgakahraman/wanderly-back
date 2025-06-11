@@ -93,6 +93,7 @@ const forgotPassword = async (req, res) => {
     res.status(500).json({ msg: 'Server error' });
   }
 };
+
 const resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
 
@@ -115,9 +116,53 @@ const resetPassword = async (req, res) => {
   }
 };
 
+
+const registerPage = (req, res) => {
+  res.render('register');
+};
+
+const loginPage = (req, res) => {
+  res.render('login');
+};
+
+const logout = (req, res) => {
+  req.logout();
+  res.redirect('/');
+};
+
+
+const registerSession = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      req.flash('error', 'Email already registered');
+      return res.redirect('/auth/register');
+    }
+
+    const user = await User.create({ name, email, password });
+    req.login(user, err => {
+      if (err) {
+        req.flash('error', 'Registration failed');
+        return res.redirect('/auth/register');
+      }
+      return res.redirect('/travel-map');
+    });
+  } catch (err) {
+    console.error(err);
+    req.flash('error', 'Registration failed');
+    res.redirect('/auth/register');
+  }
+};
+
 module.exports = {
   register,
   login,
   forgotPassword,
   resetPassword,
+  registerPage,
+  loginPage,
+  logout,
+  registerSession,
 };
