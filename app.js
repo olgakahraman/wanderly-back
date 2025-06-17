@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 const helmet = require('helmet');
 const cors = require('cors');
-const xss = require('xss-clean');
 const posts = require('./routes/posts');
 const authRoute = require('./routes/auth');
 const authMiddleware = require('./middleware/auth.js');
@@ -23,12 +22,12 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 app.use(helmet());
-app.use(xss());
 
 app.use(express.json());
 app.use((req, res, next) => {

@@ -12,9 +12,18 @@ const register = async (req, res) => {
     }
 
     const user = await User.create({ email, password });
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '30d',
-    });
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '30d',
+      }
+    );
 
     res.status(201).json({ user: { email: user.email }, token });
   } catch (err) {

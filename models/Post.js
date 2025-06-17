@@ -57,27 +57,32 @@ const PostSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Title is required'],
       trim: true,
-      minlength: 3,
-      maxlength: 100,
+      minlength: [3, 'Title must be at least 3 characters'],
+      maxlength: [100, 'Title cannot exceed 100 characters'],
     },
     content: {
       type: String,
       required: [true, 'Content is required'],
-      minlength: 10,
+      minlength: [10, 'Content must be at least 10 characters'],
     },
     location: {
       type: String,
+      default: null,
       trim: true,
-      maxlength: 100,
     },
     tags: {
       type: [String],
       default: [],
       validate: {
         validator: function (tags) {
-          return tags.length <= 10;
+          return tags.every(
+            tag =>
+              typeof tag === 'string' &&
+              tag.trim().length > 0 &&
+              tag.length <= 30
+          );
         },
-        message: 'Cannot have more than 10 tags',
+        message: 'Each tag must be a non-empty string (max 30 chars)',
       },
     },
     images: {
@@ -96,12 +101,10 @@ const PostSchema = new mongoose.Schema(
       required: [true, 'Author is required'],
       immutable: true,
     },
-
     likes: [
       {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        default: [],
       },
     ],
   },
@@ -116,5 +119,7 @@ const PostSchema = new mongoose.Schema(
     },
   }
 );
+
+PostSchema.index({ likes: 1 });
 
 module.exports = mongoose.model('Post', PostSchema);
