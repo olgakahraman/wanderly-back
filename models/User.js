@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-
 /**
  * @swagger
  * components:
@@ -31,6 +30,10 @@ const UserSchema = new mongoose.Schema(
       required: [true, 'Please provide email'],
       unique: true,
     },
+    username: {
+      type: String,
+      required: true,
+    },
     password: {
       type: String,
       required: [true, 'Please provide password'],
@@ -49,7 +52,6 @@ const UserSchema = new mongoose.Schema(
 );
 
 UserSchema.pre('save', async function (next) {
-
   if (!this.isModified('password')) return next();
 
   const salt = await bcrypt.genSalt(10);

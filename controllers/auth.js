@@ -11,13 +11,14 @@ const register = async (req, res) => {
       return res.status(400).json({ msg: 'Email already registered' });
     }
 
-    const user = await User.create({ email, password });
+    const user = await User.create({ email, password, username: email }); 
     const token = jwt.sign(
       {
         userId: user._id,
-        username: user.username,
+        username: decoded.username || decoded.email.split('@')[0] ,
         email: user.email,
         role: user.role,
+        
       },
       process.env.JWT_SECRET,
       {
@@ -50,11 +51,26 @@ const login = async (req, res) => {
       return res.status(401).json({ msg: 'Invalid Credentials' });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1d',
-    });
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '1d',
+      }
+    );
 
-    res.status(200).json({ user: { email: user.email }, token });
+    res.status(200).json({
+      user: {
+        username: user.username,
+        email: user.email,
+      },
+      token,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: 'Server error' });
