@@ -51,7 +51,11 @@ const port = process.env.PORT || 3000;
 
 const start = async () => {
   try {
-    await connectDB(process.env.MONGO_URI);
+    let mongoURL = process.env.MONGO_URI;
+    if (process.env.NODE_ENV === 'test') {
+      mongoURL = process.env.MONGO_URI_TEST;
+    }
+    await connectDB(mongoURL);
     app.listen(port, console.log(`Server is listening on port ${port}`));
   } catch (error) {
     console.log(error);
@@ -59,5 +63,5 @@ const start = async () => {
 };
 
 start();
-
+module.exports = app;
 // swagger docs http://localhost:3000/api-docs/

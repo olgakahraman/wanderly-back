@@ -15,10 +15,9 @@ const register = async (req, res) => {
     const token = jwt.sign(
       {
         userId: user._id,
-        username: decoded.username || decoded.email.split('@')[0] ,
+        username: user.username,
         email: user.email,
         role: user.role,
-        
       },
       process.env.JWT_SECRET,
       {
