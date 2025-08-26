@@ -120,6 +120,6 @@ const PostSchema = new mongoose.Schema(
   }
 );
 
-PostSchema.index({ likes: 1 });
+PostSchema.index({ likes: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Post', PostSchema);

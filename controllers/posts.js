@@ -1,11 +1,13 @@
 const Post = require('../models/Post');
-const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
 
 const getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find({})
-      .populate('author', 'username email')
+      .populate('author', 'username email hasAvatar')
       .sort({ createdAt: -1 });
+
     res.status(200).json({ posts });
   } catch (error) {
     console.error('Error getting posts:', error);
@@ -15,11 +17,25 @@ const getAllPosts = async (req, res) => {
 
 const createPost = async (req, res) => {
   try {
+    const imagePaths = Array.isArray(req.files)
+      ? req.files.map(f => `/uploads/posts/${f.filename}`)
+      : [];
+
     const post = await new Post({
-      ...req.body,
+      title: req.body.title,
+      content: req.body.content,
       author: req.user.userId,
+      location: req.body.location || null,
+      tags: prepareTags(req.body.tags),
+      images: imagePaths,
     }).save();
-    res.status(201).json({ post });
+
+    const populated = await Post.findById(post._id).populate(
+      'author',
+      'username email'
+    );
+
+    res.status(201).json({ post: populated });
   } catch (error) {
     console.error('Error creating post:', error);
     res.status(500).json({ error: 'Error creating post' });
@@ -64,7 +80,7 @@ const updatePost = async (req, res) => {
       new: true,
       runValidators: true,
       context: 'query',
-    });
+    }).populate('author', 'username email');
 
     res.status(200).json({ post });
   } catch (error) {
@@ -78,70 +94,49 @@ function prepareTags(tags) {
     return tags
       .split(',')
       .map(t => t.trim())
-      .filter(t => t);
+      .filter(Boolean);
   return [];
 }
 
 function handleUpdateError(error, res) {
   console.error('Update error:', error);
-
   if (error.name === 'ValidationError') {
     const errors = {};
     Object.keys(error.errors).forEach(key => {
       errors[key] = error.errors[key].message;
     });
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: errors,
-    });
+    return res
+      .status(400)
+      .json({ error: 'Validation failed', details: errors });
   }
-
-  res.status(500).json({
-    error: 'Server error',
-    details: error.message,
-  });
+  res.status(500).json({ error: 'Server error', details: error.message });
 }
 
 const likePost = async (req, res) => {
   try {
-    console.log('=== LIKE POST DEBUG ===');
-    console.log('Post ID:', req.params.id);
-    console.log('User ID:', req.user.userId);
-    console.log('User object:', req.user);
-
     const postId = req.params.id;
     const userId = req.user.userId;
 
-    const post = await Post.findById(postId);
-    console.log('Found post:', post ? 'YES' : 'NO');
+    const post = await Post.findById(postId).populate(
+      'author',
+      'username email'
+    );
+    if (!post) return res.status(404).json({ error: 'Post not found' });
 
-    if (!post) {
-      console.log('Post not found in database');
-      return res.status(404).json({ error: 'Post not found' });
+    if (String(post.author._id) === String(userId)) {
+      return res.status(400).json({ error: 'Cannot like your own post' });
     }
 
-    console.log('Post author:', post.author);
-    console.log('Post likes before:', post.likes);
-    console.log(
-      'User likes before:',
-      post.likes.map(l => l.toString())
-    );
-    console.log('Current user ID:', userId);
-
     const hasLiked = post.likes.some(like => like.toString() === userId);
-    console.log('User has liked this post:', hasLiked);
 
     let updatedPost;
-
     if (hasLiked) {
-      console.log('Removing like...');
       updatedPost = await Post.findByIdAndUpdate(
         postId,
         { $pull: { likes: userId } },
         { new: true }
       ).populate('author', 'username email');
     } else {
-      console.log('Adding like...');
       updatedPost = await Post.findByIdAndUpdate(
         postId,
         { $addToSet: { likes: userId } },
@@ -149,39 +144,15 @@ const likePost = async (req, res) => {
       ).populate('author', 'username email');
     }
 
-    console.log('Post likes after:', updatedPost.likes);
-    console.log('Operation completed successfully');
-    console.log('=== END LIKE POST DEBUG ===');
-
-    res.status(200).json(updatedPost);
+    res.status(200).json({ post: updatedPost });
   } catch (error) {
-    console.error('=== LIKE POST ERROR ===');
-    console.error('Error details:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('=== END ERROR ===');
-
-    if (error.name === 'CastError' && error.kind === 'ObjectId') {
-      return res.status(400).json({
-        error: 'Invalid post ID format',
-        details: 'The provided ID is not a valid MongoDB ObjectId',
-      });
-    }
-
-    res.status(500).json({
-      error: 'Server error',
-      details: error.message,
-      ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
-    });
+    console.error('Like post error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 };
 
 const deletePost = async (req, res) => {
   try {
-    console.log('Deleting post with ID:', req.params.id);
-    console.log('User ID:', req.user.userId);
-
     const post = await Post.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ msg: 'Post not found' });
@@ -192,12 +163,18 @@ const deletePost = async (req, res) => {
         .status(403)
         .json({ msg: 'Not authorized to delete this post' });
     }
-
+    if (Array.isArray(post.images)) {
+      for (const imgPath of post.images) {
+        const absPath = path.join(process.cwd(), imgPath);
+        fs.unlink(absPath, err => {
+          if (err) console.warn('Failed to delete file:', absPath, err.message);
+        });
+      }
+    }
     await Post.findByIdAndDelete(req.params.id);
-
     res.status(200).json({ msg: 'Post deleted successfully' });
   } catch (error) {
-    console.error('Error deleting post:', error);
+    console.error('Delete post error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -207,6 +184,6 @@ module.exports = {
   createPost,
   getPost,
   updatePost,
-  deletePost,
   likePost,
+  deletePost,
 };

@@ -29,16 +29,30 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide email'],
       unique: true,
+      lowercase: true,
+      trim: true,
     },
     username: {
       type: String,
       required: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 50,
     },
     password: {
       type: String,
       required: [true, 'Please provide password'],
       minlength: 6,
     },
+    bio: {
+      type: String,
+      default: '',
+      maxlength: 500,
+      trim: true,
+    },
+    avatarBuffer: { type: Buffer, select: false },
+    avatarMime: { type: String, default: null, select: false },
+    hasAvatar: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -53,7 +67,6 @@ const UserSchema = new mongoose.Schema(
 
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();

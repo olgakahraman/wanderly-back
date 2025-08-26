@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
 const {
   getAllPosts,
   createPost,
@@ -10,6 +14,32 @@ const {
   likePost,
 } = require('../controllers/posts');
 
+const uploadDir = path.join(process.cwd(), 'uploads', 'posts');
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const base = path
+      .basename(file.originalname, ext)
+      .replace(/\s+/g, '-')
+      .replace(/[^a-zA-Z0-9-_]/g, '')
+      .toLowerCase();
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}-${base}${ext}`);
+  },
+});
+
+const uploadPic = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.mimetype)) {
+      return cb(new Error('Only image files are allowed'));
+    }
+    cb(null, true);
+  },
+});
 /**
  * @swagger
  * tags:
@@ -26,14 +56,6 @@ const {
  *     responses:
  *       200:
  *         description: List of posts
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Post'
- *       500:
- *         description: Server error
  */
 router.get('/', getAllPosts);
 
@@ -52,10 +74,6 @@ router.get('/', getAllPosts);
  *     responses:
  *       200:
  *         description: Post details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Post'
  *       404:
  *         description: Post not found
  */
@@ -65,23 +83,33 @@ router.get('/:id', getPost);
  * @swagger
  * /api/v1/posts:
  *   post:
- *     summary: Create new post
+ *     summary: Create new post (with optional images)
  *     tags: [Posts]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/Post'
+ *             type: object
+ *             properties:
+ *               title:    { type: string }
+ *               content:  { type: string }
+ *               location: { type: string }
+ *               tags:     { type: string, description: "comma separated" }
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
  *     responses:
  *       201:
  *         description: Post created
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post('/', auth, createPost);
+router.post('/', auth, uploadPic.array('images', 10), createPost);
 
 /**
  * @swagger
@@ -94,31 +122,17 @@ router.post('/', auth, createPost);
  *     parameters:
  *       - in: path
  *         name: id
- *         schema:
- *           type: string
  *         required: true
- *         description: Post ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Post'
+ *           schema: { $ref: '#/components/schemas/Post' }
  *     responses:
- *       200:
- *         description: Post updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Post'
- *       400:
- *         description: Validation error
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         description: Not authorized to update this post
- *       404:
- *         description: Post not found
+ *       200: { description: Post updated }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { description: Not authorized }
+ *       404: { description: Post not found }
  */
 router.patch('/:id', auth, updatePost);
 
@@ -133,19 +147,12 @@ router.patch('/:id', auth, updatePost);
  *     parameters:
  *       - in: path
  *         name: id
- *         schema:
- *           type: string
  *         required: true
- *         description: Post ID
  *     responses:
- *       200:
- *         description: Post deleted successfully
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         description: Not authorized to delete this post
- *       404:
- *         description: Post not found
+ *       200: { description: Post deleted }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { description: Not authorized }
+ *       404: { description: Post not found }
  */
 router.delete('/:id', auth, deletePost);
 
@@ -160,29 +167,12 @@ router.delete('/:id', auth, deletePost);
  *     parameters:
  *       - in: path
  *         name: id
- *         schema:
- *           type: string
  *         required: true
- *         description: Post ID
  *     responses:
- *       200:
- *         description: Like status updated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 likes:
- *                   type: array
- *                   items:
- *                     type: string
- *                     description: User IDs who liked the post
- *       400:
- *         description: Cannot like your own post
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       404:
- *         description: Post not found
+ *       200: { description: Like status updated }
+ *       400: { description: Cannot like your own post }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       404: { description: Post not found }
  */
 router.patch('/:id/like', auth, likePost);
 

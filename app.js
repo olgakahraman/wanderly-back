@@ -1,22 +1,25 @@
 const express = require('express');
-const app = express();
 const helmet = require('helmet');
 const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
+
 const posts = require('./routes/posts');
 const authRoute = require('./routes/auth');
-const authMiddleware = require('./middleware/auth.js');
+const usersRoute = require('./routes/users');
+
 const notFound = require('./middleware/notFound');
 const errorHandlerMiddleware = require('./middleware/errorHandler');
-
 const connectDB = require('./db/connect');
-require('dotenv').config();
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 
+const app = express();
+
 const allowedOrigins = [
-  'http://localhost:5173',
-  'https://wanderly-backend.onrender.com',
+  process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  'https://wanderly-front.onrender.com',
 ];
 
 app.use(
@@ -27,7 +30,13 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-app.use(helmet());
+
+// позволяем кросс-доменные картинки (аватары)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 app.use(express.json());
 app.use((req, res, next) => {
@@ -36,13 +45,17 @@ app.use((req, res, next) => {
 });
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/uploads', express.static('uploads'));
 
-app.get('/hello', (req, res) => {
-  res.send('Wanderly app server side is here');
-});
+app.get('/hello', (_req, res) => res.send('Wanderly app server side is here'));
+app.get('/health', (_req, res) =>
+  res.status(200).json({ status: 'ok', uptime: process.uptime() })
+);
 
+// API
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/posts', posts);
+app.use('/api/v1/users', usersRoute);
 
 app.use(notFound);
 app.use(errorHandlerMiddleware);
@@ -52,12 +65,13 @@ const port = process.env.PORT || 3000;
 const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
-    app.listen(port, console.log(`Server is listening on port ${port}`));
+    app.listen(port, () => console.log(`Server is listening on port ${port}`));
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    process.exit(1);
   }
 };
 
 start();
 
-// swagger docs http://localhost:3000/api-docs/
+// swagger docs: http://localhost:3000/api-docs/

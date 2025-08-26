@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const authLimiter = require('../middleware/rateLimiter');
+const auth = require('../middleware/auth');
 const {
   register,
   login,
   forgotPassword,
   resetPassword,
+  refreshToken,
 } = require('../controllers/auth');
 
 /**
@@ -190,5 +192,7 @@ router.post(
   },
   resetPassword
 );
+
+router.post('/refresh-token', auth, refreshToken);
 
 module.exports = router;
