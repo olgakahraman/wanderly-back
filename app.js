@@ -31,7 +31,6 @@ app.use(
   })
 );
 
-// позволяем кросс-доменные картинки (аватары)
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -52,7 +51,6 @@ app.get('/health', (_req, res) =>
   res.status(200).json({ status: 'ok', uptime: process.uptime() })
 );
 
-// API
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/posts', posts);
 app.use('/api/v1/users', usersRoute);

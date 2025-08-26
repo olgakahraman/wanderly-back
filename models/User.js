@@ -7,16 +7,24 @@ const bcrypt = require('bcryptjs');
  *   schemas:
  *     User:
  *       type: object
- *       required: [email, password]
+ *       required: [email, username]
  *       properties:
+ *         _id:
+ *           type: string
+ *           example: "68adc81446ede3457d8143a1"
  *         email:
  *           type: string
  *           format: email
  *           example: user@example.com
- *         password:
+ *         username:
  *           type: string
- *           format: password
- *           minLength: 6
+ *           example: traveler_olga
+ *         bio:
+ *           type: string
+ *           example: "Love mountains and coffee ☕️"
+ *         hasAvatar:
+ *           type: boolean
+ *           example: true
  *         createdAt:
  *           type: string
  *           format: date-time
